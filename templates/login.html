@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}LBMS - Login & Registration Portal{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+  <div class="auth-box">
+    
+    <div class="auth-header">
+      <div style="display:inline-block; margin-bottom:10px;">
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#CCFF00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>
+      </div>
+      <h1><span>LBMS</span> Access Portal</h1>
+      <p class="auth-brand-tag">
+        Developed by <strong>Fathima Afroz</strong>, iPEC Solutions, Bangalore
+      </p>
+    </div>
+
+    <!-- Toggle Tabs: Login vs Sign Up -->
+    <div class="nav-tabs-custom" style="margin-bottom: 22px;">
+      <button type="button" class="tab-btn active" data-tab="tab-login" id="btn-tab-login">Log In</button>
+      <button type="button" class="tab-btn" data-tab="tab-signup" id="btn-tab-signup">New User Sign Up</button>
+    </div>
+
+    <!-- 1. LOGIN TAB -->
+    <div id="tab-login" class="tab-pane active">
+      <form action="{{ url_for('login') }}" method="POST">
+        <div class="form-group">
+          <label for="login_user_id">User ID / Username</label>
+          <input type="text" id="login_user_id" name="user_id" class="form-control" placeholder="e.g. fathima or staff101" required autofocus>
+        </div>
+
+        <div class="form-group">
+          <label for="login_password">Password</label>
+          <input type="password" id="login_password" name="password" class="form-control" placeholder="Enter your password" required>
+        </div>
+
+        <button type="submit" class="btn-kiwi" style="width: 100%; justify-content: center; margin-top: 10px; padding: 12px;">
+          Log In to Main Page
+        </button>
+      </form>
+
+      <!-- Quick Fill Demo Accounts -->
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px dashed rgba(204,255,0,0.2);">
+        <p style="font-size: 0.74rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">
+          Quick Test Credentials:
+        </p>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn-outline-kiwi" style="font-size:0.75rem; padding:5px 10px; flex:1;" onclick="fillLogin('fathima', 'fathima123')">
+            Student: fathima
+          </button>
+          <button type="button" class="btn-outline-kiwi" style="font-size:0.75rem; padding:5px 10px; flex:1;" onclick="fillLogin('staff101', 'admin123')">
+            Staff: staff101
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. SIGN UP TAB -->
+    <div id="tab-signup" class="tab-pane">
+      <form action="{{ url_for('signup') }}" method="POST">
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="reg_user_id">User ID *</label>
+            <input type="text" id="reg_user_id" name="user_id" class="form-control" placeholder="Unique username" required>
+          </div>
+          <div class="form-group">
+            <label for="reg_role">Role *</label>
+            <select id="reg_role" name="role" class="form-control kiwi-select">
+              <option value="Student" selected>Student</option>
+              <option value="Staff">Library Staff</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="reg_fullname">Full Name *</label>
+          <input type="text" id="reg_fullname" name="full_name" class="form-control" placeholder="e.g. Fathima Afroz" required>
+        </div>
+
+        <div class="form-group">
+          <label for="reg_password">Password *</label>
+          <input type="password" id="reg_password" name="password" class="form-control" placeholder="Choose a secure password" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="reg_regno">Register No (USN / ID)</label>
+            <input type="text" id="reg_regno" name="regno" class="form-control" placeholder="e.g. 1IPEC2024CS01">
+          </div>
+          <div class="form-group">
+            <label for="reg_sem">Semester</label>
+            <input type="text" id="reg_sem" name="sem" class="form-control" placeholder="e.g. 6th Sem">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="reg_branch">Branch / Department</label>
+          <input type="text" id="reg_branch" name="branch" class="form-control" placeholder="e.g. Computer Science & Engineering">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="reg_email">Email</label>
+            <input type="email" id="reg_email" name="email" class="form-control" placeholder="name@domain.com">
+          </div>
+          <div class="form-group">
+            <label for="reg_phone">Phone</label>
+            <input type="text" id="reg_phone" name="phone" class="form-control" placeholder="+91 ...">
+          </div>
+        </div>
+
+        <button type="submit" class="btn-kiwi" style="width: 100%; justify-content: center; margin-top: 10px; padding: 12px;">
+          Complete Sign Up & Store in Database
+        </button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function fillLogin(u, p) {
+  document.getElementById('login_user_id').value = u;
+  document.getElementById('login_password').value = p;
+}
+
+// Auto open signup if URL query has ?tab=signup
+if (window.location.search.includes('tab=signup')) {
+  document.getElementById('btn-tab-signup').click();
+}
+</script>
+{% endblock %}

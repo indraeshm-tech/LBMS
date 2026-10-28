@@ -1,0 +1,691 @@
+{% extends "base.html" %}
+
+{% block title %}LBMS - Interactive Dashboard | Fathima Afroz, iPEC Solutions{% endblock %}
+
+{% block content %}
+<main class="dashboard-container">
+
+  <!-- ========================================================================= -->
+  <!-- SECTION 1 (LEFT COLUMN): AVAILABLE BOOKS DROPDOWN, ISSUE, RETURN & FINES -->
+  <!-- ========================================================================= -->
+  <aside class="dashboard-col-left">
+
+    <!-- Available Book Titles Dropdown Widget -->
+    <div class="lbms-card">
+      <div class="card-title">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CCFF00" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+          Available Book Titles
+        </h3>
+        <span class="section-tag">Section 1</span>
+      </div>
+
+      <div class="form-group">
+        <label for="available-book-select">Select Available Book:</label>
+        <select id="available-book-select" class="form-control kiwi-select">
+          <option value="">-- Choose Book Title to View / Auto-Fill --</option>
+          {% for b in available_books %}
+            <option value="{{ b['ISBN'] }}" data-title="{{ b['Title'] }}" data-author="{{ b['Author'] }}" data-price="{{ b['Price'] }}" data-copies="{{ b['AvailableCopies'] }}">
+              {{ b['Title'] }} ({{ b['AvailableCopies'] }} available)
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Real-time Book Detail Preview Badge -->
+      <div id="book-preview-badge" class="book-preview-badge">
+        <div id="prev-title" class="preview-title">Book Title</div>
+        <div id="prev-author" class="preview-meta">Author</div>
+        <div style="display:flex; justify-content:space-between; margin-top:6px;">
+          <span id="prev-isbn" class="preview-meta">ISBN: -</span>
+          <span id="prev-price" class="preview-price">Price: ₹0.00</span>
+        </div>
+        <div id="prev-copies" style="margin-top:6px; font-size:0.75rem; color:#2ed573; font-weight:700;">
+          Available: 0 Copies
+        </div>
+      </div>
+    </div>
+
+    <!-- Operations Panel: Issue, Return, Calculate Fine -->
+    <div class="lbms-card">
+      <div class="card-title">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFF00" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          Circulation Desk
+        </h3>
+      </div>
+
+      <!-- Tab Buttons for Section 1 Operations -->
+      <div class="nav-tabs-custom">
+        <button type="button" class="tab-btn active" data-tab="tab-issue">Issue</button>
+        <button type="button" class="tab-btn" data-tab="tab-return">Return</button>
+        <button type="button" class="tab-btn" data-tab="tab-fine">Calc Fine</button>
+      </div>
+
+      <!-- 1. ISSUE BOOK FORM -->
+      <div id="tab-issue" class="tab-pane active">
+        <form action="{{ url_for('issue_book') }}" method="POST">
+          <div class="form-group">
+            <label>ISBN *</label>
+            <input type="text" id="issue_isbn" name="isbn" class="form-control" placeholder="Select from dropdown above or enter" required>
+          </div>
+
+          <div class="form-group">
+            <label>Book Title</label>
+            <input type="text" id="issue_title" name="title" class="form-control" placeholder="Auto-filled on selection">
+          </div>
+
+          <div class="form-group">
+            <label>Author</label>
+            <input type="text" id="issue_author" name="author" class="form-control" placeholder="Author name">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Student Reg No *</label>
+              <input type="text" name="regno" class="form-control" placeholder="1IPEC..." value="{{ session.get('regno', '') }}" required>
+            </div>
+            <div class="form-group">
+              <label>Student Name</label>
+              <input type="text" name="student_name" class="form-control" placeholder="Name" value="{{ session.get('fullname', '') }}">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Semester</label>
+              <input type="text" name="sem" class="form-control" placeholder="e.g. 6th" value="{{ session.get('sem', '6th') }}">
+            </div>
+            <div class="form-group">
+              <label>Course / Branch</label>
+              <input type="text" name="course_branch" class="form-control" placeholder="Branch" value="{{ session.get('branch', 'CSE') }}">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Issue Date</label>
+              <input type="date" name="issue_date" class="form-control" value="{{ today_str }}" required>
+            </div>
+            <div class="form-group">
+              <label>Due Date *</label>
+              <input type="date" name="due_date" class="form-control" value="{{ default_due_str }}" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Issuing Staff ID</label>
+            <input type="text" name="issuing_staff_id" class="form-control" value="{{ session.get('user_id', 'STAFF-LIB-01') }}">
+          </div>
+
+          <button type="submit" class="btn-kiwi" style="width: 100%; justify-content: center; margin-top: 8px;">
+            Confirm & Issue Book
+          </button>
+        </form>
+      </div>
+
+      <!-- 2. RETURN BOOK FORM -->
+      <div id="tab-return" class="tab-pane">
+        <form action="{{ url_for('return_book') }}" method="POST">
+          <div class="form-group">
+            <label>Select Active Issue Record *</label>
+            <select id="return_issue_id" name="issue_id" class="form-control kiwi-select" required>
+              <option value="">-- Choose Active Loan --</option>
+              {% for iss in active_issues %}
+                <option value="{{ iss['IssueId'] }}" data-duedate="{{ iss['Duedate'] }}" data-price="850">
+                  #{{ iss['IssueId'] }}: {{ iss['Title'] }} ({{ iss['StudentName'] }} - Due: {{ iss['Duedate'] }})
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Return Date</label>
+            <input type="date" id="return_date_input" name="return_date" class="form-control" value="{{ today_str }}" required>
+          </div>
+
+          <div class="form-group">
+            <label>Returning Staff ID</label>
+            <input type="text" name="returning_staff_id" class="form-control" value="{{ session.get('user_id', 'STAFF-LIB-01') }}">
+          </div>
+
+          <div class="form-group" style="margin: 12px 0; background:rgba(255, 71, 87, 0.08); padding:10px; border-radius:8px; border:1px solid rgba(255, 71, 87, 0.3);">
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:#ff7675; text-transform:none; margin:0;">
+              <input type="checkbox" id="return_is_lost" name="is_lost" value="1" style="width:16px; height:16px; accent-color:#ff4757;">
+              <strong>Mark as Book Lost by Student</strong>
+            </label>
+            <p style="font-size:0.72rem; color:var(--text-secondary); margin-top:4px; margin-left:24px;">
+              Applies penalty: Original Book Price + Overdue fine if past due date.
+            </p>
+          </div>
+
+          <!-- Dynamic Live Return Estimation Badge -->
+          <div id="return-preview-info" style="display:none; margin-bottom:14px; padding:10px; background:#181d18; border-radius:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span id="ret-status-est" style="font-size:0.78rem; font-weight:700;">Status</span>
+              <span id="ret-fine-est" class="badge">Fine: ₹0.00</span>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-kiwi" style="width: 100%; justify-content: center;">
+            Process Book Return
+          </button>
+        </form>
+      </div>
+
+      <!-- 3. FINE & PENALTY CALCULATOR TOOL -->
+      <div id="tab-fine" class="tab-pane">
+        <p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 12px;">
+          <strong>Fine Rules:</strong> ₹10/day within 1st week overdue (1-7 days). ₹20/day after 1 week. Penalty: Original Price + Due fine if lost.
+        </p>
+
+        <div class="form-group">
+          <label>Original Book Price (₹)</label>
+          <input type="number" id="sim_price" class="form-control" value="850" step="10">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Due Date</label>
+            <input type="date" id="sim_due_date" class="form-control" value="{{ today_str }}">
+          </div>
+          <div class="form-group">
+            <label>Return / Lost Date</label>
+            <input type="date" id="sim_return_date" class="form-control" value="{{ today_str }}">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin: 10px 0;">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; text-transform:none;">
+            <input type="checkbox" id="sim_is_lost" style="width:16px; height:16px; accent-color:#CCFF00;">
+            <span>Student Lost the Book?</span>
+          </label>
+        </div>
+
+        <!-- Calculator Output Box -->
+        <div id="calc-results" class="calc-result-box" style="display:none;">
+          <div style="font-size:0.75rem; color:var(--kiwi-primary); font-weight:700; text-transform:uppercase; margin-bottom:6px;">
+            Calculation Breakdown:
+          </div>
+          <div id="calc-breakdown-list"></div>
+          <div class="calc-total-row">
+            <span class="calc-total-label">Total Payable:</span>
+            <span id="calc-total-val" class="calc-total-val">₹0.00</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </aside>
+
+  <!-- ========================================================================= -->
+  <!-- SECTION 2 (CENTER COLUMN): INVENTORY CATALOG & ACTIVE TRANSACTIONS        -->
+  <!-- ========================================================================= -->
+  <section class="dashboard-col-center">
+
+    <!-- KPI Summary Counters -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-value">{{ total_titles }}</div>
+        <div class="kpi-label">Unique Titles</div>
+      </div>
+      <div class="kpi-card yellow">
+        <div class="kpi-value">{{ total_copies }}</div>
+        <div class="kpi-label">Available Copies</div>
+      </div>
+      <div class="kpi-card accent">
+        <div class="kpi-value">{{ currently_issued }}</div>
+        <div class="kpi-label">Active Loans</div>
+      </div>
+      <div class="kpi-card danger">
+        <div class="kpi-value">₹{{ "%.2f"|format(total_fines_collected) }}</div>
+        <div class="kpi-label">Fines Collected</div>
+      </div>
+    </div>
+
+    <!-- Live Books Details Catalog -->
+    <div class="lbms-card">
+      <div class="card-title">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CCFF00" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+          Book Details Catalog (RDBMS Table)
+        </h3>
+        <div>
+          <button class="btn-outline-kiwi" style="font-size:0.75rem; padding:5px 12px;" data-modal-target="modal-add-book">
+            + Add New Book
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Search Filter -->
+      <div style="margin-bottom: 14px;">
+        <input type="text" id="book-search-input" class="form-control" placeholder="Search book catalog by Title, Author, ISBN, Publisher...">
+      </div>
+
+      <div class="table-responsive" style="max-height: 290px; overflow-y: auto;">
+        <table class="table-custom" id="books-table">
+          <thead>
+            <tr>
+              <th>Bid</th>
+              <th>ISBN</th>
+              <th>Title / Book Name</th>
+              <th>Author</th>
+              <th>Edition</th>
+              <th>Publisher</th>
+              <th>Price</th>
+              <th>Copies</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in books %}
+            <tr>
+              <td><code>#{{ b['Bid'] }}</code></td>
+              <td><code>{{ b['ISBN'] }}</code></td>
+              <td><strong>{{ b['Title'] }}</strong></td>
+              <td>{{ b['Author'] }}</td>
+              <td>{{ b['Edition'] or '-' }}</td>
+              <td>{{ b['Publisher'] or '-' }}</td>
+              <td style="color:var(--kiwi-bright); font-weight:700;">₹{{ "%.2f"|format(b['Price']) }}</td>
+              <td>
+                {% if b['AvailableCopies'] > 0 %}
+                  <span class="badge badge-success">{{ b['AvailableCopies'] }} in stock</span>
+                {% else %}
+                  <span class="badge badge-danger">Out of stock</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Active Book Loans (IssueDate Table) -->
+    <div class="lbms-card">
+      <div class="card-title">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFF00" stroke-width="2">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="8.5" cy="7.5" r="4"></circle>
+            <polyline points="17 11 19 13 23 9"></polyline>
+          </svg>
+          Active Issues (IssueDate Table)
+        </h3>
+        <span class="badge badge-kiwi">{{ active_issues|length }} Active</span>
+      </div>
+
+      <div class="table-responsive" style="max-height: 230px; overflow-y: auto;">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Book Title & ISBN</th>
+              <th>Student Name & RegNo</th>
+              <th>Sem / Branch</th>
+              <th>Issue Date</th>
+              <th>Due Date</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if active_issues %}
+              {% for iss in active_issues %}
+              <tr>
+                <td><code>#{{ iss['IssueId'] }}</code></td>
+                <td>
+                  <strong>{{ iss['Title'] }}</strong><br>
+                  <span style="font-size:0.74rem; color:var(--text-secondary);">{{ iss['ISBN'] }}</span>
+                </td>
+                <td>
+                  {{ iss['StudentName'] }}<br>
+                  <span style="font-size:0.74rem; color:var(--kiwi-bright);">{{ iss['Regno'] }}</span>
+                </td>
+                <td>{{ iss['Sem'] }} / {{ iss['Course_Branch'] }}</td>
+                <td>{{ iss['IssueDate'] }}</td>
+                <td>
+                  {% if iss['Duedate'] < today_str %}
+                    <span style="color:#ff7675; font-weight:700;">{{ iss['Duedate'] }} (OVERDUE)</span>
+                  {% else %}
+                    <span>{{ iss['Duedate'] }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge badge-warning">ISSUED</span>
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="7" style="text-align:center; color:var(--text-muted); padding:20px;">
+                  No books currently issued. All library inventory is available!
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Recent Return History (ReturnData Table) -->
+    <div class="lbms-card">
+      <div class="card-title">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2ed573" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          Recent Returns (ReturnData Table)
+        </h3>
+        <span class="section-tag">Audit Trail</span>
+      </div>
+
+      <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>Ret ID</th>
+              <th>Book Title</th>
+              <th>Student Name</th>
+              <th>Return Date</th>
+              <th>Days Overdue</th>
+              <th>Fine Paid</th>
+              <th>Penalty</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if return_history %}
+              {% for ret in return_history %}
+              <tr>
+                <td><code>#{{ ret['ReturnId'] }}</code></td>
+                <td><strong>{{ ret['Title'] }}</strong></td>
+                <td>{{ ret['StudentName'] }} ({{ ret['Regno'] }})</td>
+                <td>{{ ret['ReturnDate'] }}</td>
+                <td>
+                  {% if ret['DaysOverdue'] > 0 %}
+                    <span style="color:#ffa502;">{{ ret['DaysOverdue'] }} days</span>
+                  {% else %}
+                    <span style="color:#2ed573;">0 (On Time)</span>
+                  {% endif %}
+                </td>
+                <td>₹{{ "%.2f"|format(ret['FineAmount']) }}</td>
+                <td>₹{{ "%.2f"|format(ret['PenaltyAmount']) }}</td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="7" style="text-align:center; color:var(--text-muted); padding:16px;">
+                  No return records yet.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- SECTION 3 (RIGHT COLUMN): LIBRARY CARD, NO-DUE CERTIFICATE & FINE PANEL   -->
+  <!-- ========================================================================= -->
+  <aside class="dashboard-col-right">
+
+    <!-- Interactive Library Card Generator -->
+    <div class="lbms-card">
+      <div class="card-title">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CCFF00" stroke-width="2">
+            <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+            <line x1="2" y1="10" x2="22" y2="10"></line>
+          </svg>
+          Smart Library Card
+        </h3>
+        <span class="badge badge-kiwi">Instant ID</span>
+      </div>
+
+      <div class="smart-card-preview">
+        <div class="card-preview-header">
+          <div class="college-name">iPEC Solutions • LBMS</div>
+          <span style="font-size:0.68rem; color:var(--kiwi-bright); font-weight:700;">VALID 2024-25</span>
+        </div>
+
+        <div class="card-body-flex">
+          <div class="avatar-placeholder">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#CCFF00" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>PHOTO</span>
+          </div>
+
+          <div class="card-details">
+            <div class="card-student-name">{{ session.get('fullname', 'Fathima Afroz') }}</div>
+            <div class="card-regno">{{ session.get('regno', '1IPEC2024CS01') }}</div>
+            <div class="card-meta-line">{{ session.get('branch', 'Computer Science') }} • {{ session.get('sem', '6th') }}</div>
+            <div class="card-meta-line" style="margin-top:2px;">Role: <strong>{{ session.get('role', 'Student') }}</strong></div>
+          </div>
+        </div>
+
+        <div class="fake-barcode"></div>
+      </div>
+
+      <div style="margin-top: 14px;">
+        <a href="{{ url_for('library_card') }}" target="_blank" class="btn-outline-kiwi" style="width: 100%; justify-content: center;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          Open & Print Official Library Card
+        </a>
+      </div>
+    </div>
+
+    <!-- No-Due Certificate (NDC) Verification Engine -->
+    <div class="lbms-card">
+      <div class="card-title">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DEFF00" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          No-Due Certificate Engine
+        </h3>
+        <span class="section-tag">Section 3</span>
+      </div>
+
+      {% set user_fines_sum = user_pending_fines|sum(attribute='Fine') + user_pending_fines|sum(attribute='Penality') %}
+      {% if user_active_issues|length == 0 and user_fines_sum == 0 %}
+        <!-- ELIGIBLE STATE -->
+        <div class="ndc-status-box ndc-eligible">
+          <div class="ndc-status-icon">✅</div>
+          <div class="ndc-status-title" style="color:#2ed573;">No Dues Pending!</div>
+          <p style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:12px;">
+            All books have been returned and all library fees/fines are fully settled. You are eligible for the institutional clearance certificate.
+          </p>
+          <a href="{{ url_for('no_due_certificate') }}" target="_blank" class="btn-kiwi" style="width: 100%; justify-content: center;">
+            Generate No-Due Certificate
+          </a>
+        </div>
+      {% else %}
+        <!-- INELIGIBLE / PENDING DUES STATE -->
+        <div class="ndc-status-box ndc-ineligible">
+          <div class="ndc-status-icon">⚠️</div>
+          <div class="ndc-status-title" style="color:#ff7675;">Dues Clearance Required</div>
+          <p style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:10px;">
+            Cannot generate No-Due Certificate until all issued books are returned and pending fines are cleared.
+          </p>
+          
+          <div style="text-align:left; font-size:0.75rem; background:rgba(0,0,0,0.4); padding:10px; border-radius:6px; margin-bottom:10px;">
+            {% if user_active_issues %}
+              <div style="color:#ffa502; margin-bottom:4px;">
+                • <strong>{{ user_active_issues|length }} Book(s) unreturned:</strong>
+                {% for b in user_active_issues %}
+                  <div style="padding-left:10px; color:#fff;">- {{ b['Title'] }} (Due: {{ b['Duedate'] }})</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+            {% if user_fines_sum > 0 %}
+              <div style="color:#ff7675;">
+                • <strong>Outstanding Fine / Penalty:</strong> ₹{{ "%.2f"|format(user_fines_sum) }}
+              </div>
+            {% endif %}
+          </div>
+
+          <a href="{{ url_for('no_due_certificate') }}" class="btn-outline-kiwi" style="width: 100%; justify-content: center; font-size:0.78rem;">
+            Inspect Full Clearance Status
+          </a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- FineCalculation Table & Clearance Management -->
+    <div class="lbms-card">
+      <div class="card-title">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffa502" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+          Fine Calculation Table
+        </h3>
+        <span class="badge badge-warning">RDBMS Table</span>
+      </div>
+
+      <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Student</th>
+              <th>Fine</th>
+              <th>Penalty</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if fines %}
+              {% for f in fines %}
+              <tr>
+                <td><code>#{{ f['FineId'] }}</code></td>
+                <td>{{ f['StudentName'] }}</td>
+                <td>₹{{ "%.2f"|format(f['Fine']) }}</td>
+                <td>₹{{ "%.2f"|format(f['Penality']) }}</td>
+                <td>
+                  {% if f['Status'] == 'PAID' %}
+                    <span class="badge badge-success">PAID</span>
+                  {% else %}
+                    <span class="badge badge-danger">PENDING</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if f['Status'] == 'PENDING' %}
+                    <form action="{{ url_for('pay_fine', fine_id=f['FineId']) }}" method="POST" style="margin:0;">
+                      <button type="submit" class="btn-kiwi" style="font-size:0.7rem; padding:3px 8px;">
+                        Pay
+                      </button>
+                    </form>
+                  {% else %}
+                    <span style="color:#2ed573; font-size:0.75rem;">Cleared</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="6" style="text-align:center; color:var(--text-muted); padding:16px;">
+                  No fine records in database.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </aside>
+
+</main>
+
+<!-- ========================================================================= -->
+<!-- MODAL: ADD NEW BOOK TO RDBMS (BookDetails Table)                          -->
+<!-- ========================================================================= -->
+<div id="modal-add-book" class="modal-overlay">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3>Add New Book to BookDetails Table</h3>
+      <button type="button" class="modal-close-btn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form action="{{ url_for('add_book') }}" method="POST">
+        <div class="form-row">
+          <div class="form-group">
+            <label>ISBN *</label>
+            <input type="text" name="isbn" class="form-control" placeholder="978-..." required>
+          </div>
+          <div class="form-group">
+            <label>Book Name (Bname) *</label>
+            <input type="text" name="bname" class="form-control" placeholder="Name" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Book Title</label>
+          <input type="text" name="title" class="form-control" placeholder="Complete Title">
+        </div>
+
+        <div class="form-group">
+          <label>Author *</label>
+          <input type="text" name="author" class="form-control" placeholder="Author name(s)" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Edition</label>
+            <input type="text" name="edition" class="form-control" placeholder="e.g. 3rd Edition">
+          </div>
+          <div class="form-group">
+            <label>Publisher</label>
+            <input type="text" name="publisher" class="form-control" placeholder="e.g. Pearson">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Volume</label>
+            <input type="text" name="volume" class="form-control" placeholder="e.g. Vol 1">
+          </div>
+          <div class="form-group">
+            <label>Price (₹) *</label>
+            <input type="number" name="price" class="form-control" placeholder="650.00" step="0.5" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Available Copies</label>
+          <input type="number" name="copies" class="form-control" value="3" min="1" required>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+          <button type="button" class="btn-outline-kiwi modal-close-btn">Cancel</button>
+          <button type="submit" class="btn-kiwi">Save Book in Database</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

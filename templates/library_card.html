@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Library Card - {{ card.name }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0d0f0d;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .actions-bar {
+      margin-bottom: 24px;
+      display: flex;
+      gap: 14px;
+    }
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.9rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+      transition: transform 0.2s ease;
+    }
+    .btn-kiwi {
+      background: #CCFF00;
+      color: #000;
+      box-shadow: 0 0 15px rgba(204, 255, 0, 0.4);
+    }
+    .btn-outline {
+      background: transparent;
+      color: #CCFF00;
+      border: 1px solid #CCFF00;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+    /* ID Card Canvas */
+    .id-card-wrapper {
+      width: 500px;
+      height: 310px;
+      background: linear-gradient(135deg, #131713 0%, #080a08 100%);
+      border: 2px solid #CCFF00;
+      border-radius: 16px;
+      padding: 20px 24px;
+      box-shadow: 0 0 35px rgba(204, 255, 0, 0.25);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .id-card-wrapper::before {
+      content: "";
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 150px;
+      height: 150px;
+      background: radial-gradient(circle, rgba(204, 255, 0, 0.15) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1.5px solid rgba(204, 255, 0, 0.3);
+      padding-bottom: 10px;
+    }
+    .inst-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #CCFF00;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+    .inst-sub {
+      font-size: 0.68rem;
+      color: #FFFF00;
+      letter-spacing: 0.5px;
+    }
+    .card-id-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      background: rgba(204, 255, 0, 0.15);
+      color: #CCFF00;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(204, 255, 0, 0.3);
+    }
+    .card-mid {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      margin: 12px 0;
+    }
+    .photo-frame {
+      width: 85px;
+      height: 100px;
+      background: #1c221c;
+      border: 1.5px solid #CCFF00;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #CCFF00;
+      font-size: 0.7rem;
+      box-shadow: 0 0 10px rgba(204, 255, 0, 0.15);
+    }
+    .info-list {
+      flex: 1;
+    }
+    .info-name {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 2px;
+    }
+    .info-regno {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.88rem;
+      color: #FFFF00;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .info-row {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      font-size: 0.75rem;
+      margin-bottom: 3px;
+    }
+    .info-label {
+      color: #8fa08f;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .info-value {
+      color: #e5ece5;
+      font-weight: 600;
+    }
+    .card-bot {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-top: 1px dashed rgba(204, 255, 0, 0.25);
+      padding-top: 10px;
+    }
+    .barcode {
+      width: 200px;
+      height: 28px;
+      background: repeating-linear-gradient(
+        90deg,
+        #CCFF00 0px,
+        #CCFF00 2px,
+        transparent 2px,
+        transparent 5px,
+        #CCFF00 5px,
+        #CCFF00 8px,
+        transparent 8px,
+        transparent 11px
+      );
+    }
+    .valid-info {
+      text-align: right;
+      font-size: 0.68rem;
+      color: #8fa08f;
+    }
+    .valid-info strong {
+      color: #CCFF00;
+    }
+
+    /* Print Optimizations */
+    @media print {
+      body {
+        background: #fff;
+        color: #000;
+      }
+      .actions-bar {
+        display: none !important;
+      }
+      .id-card-wrapper {
+        border: 2px solid #000 !important;
+        box-shadow: none !important;
+        background: #fff !important;
+        color: #000 !important;
+        -webkit-print-color-adjust: exact;
+      }
+      .inst-title, .inst-sub, .info-name, .info-regno, .info-value, .card-id-badge {
+        color: #000 !important;
+      }
+      .barcode {
+        background: repeating-linear-gradient(
+          90deg,
+          #000 0px,
+          #000 2px,
+          transparent 2px,
+          transparent 5px,
+          #000 5px,
+          #000 8px,
+          transparent 8px,
+          transparent 11px
+        ) !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="actions-bar">
+    <button class="btn btn-kiwi" onclick="window.print()">
+      🖨️ Print / Save as PDF
+    </button>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-outline">
+      ← Back to Dashboard
+    </a>
+  </div>
+
+  <!-- Institutional Smart Library Card -->
+  <div class="id-card-wrapper" id="library-card">
+    <div class="card-top">
+      <div>
+        <div class="inst-title">iPEC Solutions • LBMS</div>
+        <div class="inst-sub">Central Information & Library Resource Center, Bangalore</div>
+      </div>
+      <div class="card-id-badge">{{ card.card_no }}</div>
+    </div>
+
+    <div class="card-mid">
+      <div class="photo-frame">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#CCFF00" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span style="margin-top:4px; font-weight:700;">MEMBER</span>
+      </div>
+
+      <div class="info-list">
+        <div class="info-name">{{ card.name }}</div>
+        <div class="info-regno">{{ card.regno }}</div>
+        <div class="info-row">
+          <span class="info-label">Branch:</span>
+          <span class="info-value">{{ card.branch }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Semester:</span>
+          <span class="info-value">{{ card.sem }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Privilege:</span>
+          <span class="info-value">Borrow limit {{ card.issue_limit }} books (Active: {{ card.active_loans }})</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-bot">
+      <div>
+        <div class="barcode"></div>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:0.62rem; color:#8fa08f; margin-top:2px;">
+          *{{ card.regno }}*
+        </div>
+      </div>
+      <div class="valid-info">
+        <div>Issued: <strong>{{ card.issued_date }}</strong></div>
+        <div>Valid Till: <strong>{{ card.valid_till }}</strong></div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
