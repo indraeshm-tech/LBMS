@@ -135,3 +135,4 @@ The database file `library_management_system.db` is a standard SQLite3 database 
    -- View all fines and settlement status
    SELECT * FROM FineCalculation;
    ```
+"# LBMS2" 
